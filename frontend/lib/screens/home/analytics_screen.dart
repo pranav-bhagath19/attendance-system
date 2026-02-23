@@ -97,7 +97,6 @@ class _StudentAnalyticsCard extends StatelessWidget {
   final Map<String, dynamic> student;
 
   const _StudentAnalyticsCard({
-    super.key,
     required this.student,
   });
 
@@ -237,7 +236,6 @@ class _StatColumn extends StatelessWidget {
   final Color color;
 
   const _StatColumn({
-    super.key,
     required this.label,
     required this.value,
     required this.color,

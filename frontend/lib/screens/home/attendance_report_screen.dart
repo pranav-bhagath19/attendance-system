@@ -209,7 +209,6 @@ class _SummaryItem extends StatelessWidget {
   final Color color;
 
   const _SummaryItem({
-    super.key,
     required this.label,
     required this.count,
     required this.color,
@@ -251,7 +250,6 @@ class _AttendanceRow extends StatefulWidget {
   final Function(String) onStatusChanged;
 
   const _AttendanceRow({
-    super.key,
     required this.record,
     required this.onStatusChanged,
   });

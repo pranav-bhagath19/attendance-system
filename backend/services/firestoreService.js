@@ -102,9 +102,9 @@ const getTeacherClasses = async (teacherId) => {
 };
 
 // Get class details with students
-const getClassWithStudents = async (classId) => {
+const getClassWithStudents = async (class_id) => {
   try {
-    const classDoc = await db.collection('classes').doc(classId).get();
+    const classDoc = await db.collection('classes').doc(class_id).get();
 
     if (!classDoc.exists) {
       return null;
@@ -113,7 +113,7 @@ const getClassWithStudents = async (classId) => {
     // Get students in class
     const studentsSnapshot = await db
       .collection('students')
-      .where('class_id', '==', classId)
+      .where('class_id', '==', class_id)
       .get();
 
     const students = [];
@@ -134,11 +134,11 @@ const getClassWithStudents = async (classId) => {
 // ============ STUDENT OPERATIONS ============
 
 // Get all students in a class
-const getStudentsByClass = async (classId) => {
+const getStudentsByClass = async (class_id) => {
   try {
     const snapshot = await db
       .collection('students')
-      .where('class_id', '==', classId)
+      .where('class_id', '==', class_id)
       .orderBy('roll_no')
       .get();
 
@@ -215,11 +215,11 @@ const markAttendance = async (attendanceData) => {
 };
 
 // Get attendance report for a class on a specific date
-const getAttendanceReport = async (classId, date) => {
+const getAttendanceReport = async (class_id, date) => {
   try {
     const snapshot = await db
       .collection('attendance')
-      .where('class_id', '==', classId)
+      .where('class_id', '==', class_id)
       .where('date', '==', date)
       .get();
 

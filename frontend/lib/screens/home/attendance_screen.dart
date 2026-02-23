@@ -663,7 +663,6 @@ class _GestureHint extends StatelessWidget {
   final double opacity;
 
   const _GestureHint({
-    super.key,
     required this.icon,
     required this.label,
     required this.color,
@@ -702,7 +701,6 @@ class _StudentDetailsPanel extends StatelessWidget {
   final VoidCallback onMarkLate;
 
   const _StudentDetailsPanel({
-    super.key,
     required this.student,
     required this.onMarkPresent,
     required this.onMarkAbsent,
@@ -846,7 +844,6 @@ class _DetailItem extends StatelessWidget {
   final String value;
 
   const _DetailItem({
-    super.key,
     required this.label,
     required this.value,
   });
@@ -874,7 +871,6 @@ class _StatCounter extends StatelessWidget {
   final Color color;
 
   const _StatCounter({
-    super.key,
     required this.label,
     required this.count,
     required this.color,
