@@ -1,5 +1,6 @@
 /// App Theme
 /// Centralized theme configuration for consistent UI design
+library;
 
 import 'package:flutter/material.dart';
 

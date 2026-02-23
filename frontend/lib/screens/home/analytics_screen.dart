@@ -1,5 +1,6 @@
 /// Analytics Screen
 /// Display attendance analytics and statistics
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,9 +11,9 @@ class AnalyticsScreen extends StatefulWidget {
   final String classId;
 
   const AnalyticsScreen({
-    Key? key,
+    super.key,
     required this.classId,
-  }) : super(key: key);
+  });
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -96,9 +97,9 @@ class _StudentAnalyticsCard extends StatelessWidget {
   final Map<String, dynamic> student;
 
   const _StudentAnalyticsCard({
-    Key? key,
+    super.key,
     required this.student,
-  }) : super(key: key);
+  });
 
   Color _getStatusColor(int percentage) {
     if (percentage >= 75) return AppTheme.successGreen;
@@ -236,11 +237,11 @@ class _StatColumn extends StatelessWidget {
   final Color color;
 
   const _StatColumn({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

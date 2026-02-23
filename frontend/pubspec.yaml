@@ -13,59 +13,59 @@ dependencies:
     sdk: flutter
 
   # API & Networking
-  http: ^1.1.0
-  dio: ^5.3.0
+  http: ^1.2.1
+  dio: ^5.4.3
 
   # State Management
-  provider: ^6.0.0
+  provider: ^6.1.2
 
   # Local Storage
-  shared_preferences: ^2.2.0
-  local_auth: ^2.1.0
+  shared_preferences: ^2.2.2
+  local_auth: ^3.0.0
 
   # UI Components
-  cupertino_icons: ^1.0.2
-  material_design_icons_flutter: ^7.0.7
+  cupertino_icons: ^1.0.6
+  material_design_icons_flutter: ^7.0.7276
 
   # Card Swiping
   swipeable_card_stack: ^0.0.5
   # appinio_swiper: ^0.1.0  # Removed - package not found in pub.dev
 
   # Animations & Transitions
-  flutter_animate: ^4.1.1
-  lottie: ^2.3.2
+  flutter_animate: ^4.5.0
+  lottie: ^3.1.0
 
   # Image Handling
-  cached_network_image: ^3.2.0
-  image_picker: ^0.8.7
+  cached_network_image: ^3.3.1
+  image_picker: ^1.0.7
 
   # PDF Export
-  pdf: ^3.10.0
-  printing: ^5.11.0
+  pdf: ^3.10.8
+  printing: ^5.11.1
 
   # Excel Export
-  excel: ^2.1.0
-  path_provider: ^2.1.0
+  excel: ^4.0.2
+  path_provider: ^2.1.2
 
   # Date & Time
-  intl: ^0.18.1
-  table_calendar: ^3.0.9
+  intl: ^0.20.2
+  table_calendar: ^3.1.0
 
   # Utilities
-  uuid: ^4.0.0
-  connectivity_plus: ^5.0.0
-  device_info_plus: ^9.1.0
+  uuid: ^4.3.3
+  connectivity_plus: ^7.0.0
+  device_info_plus: ^12.3.0
 
   # Analytics & Monitoring (Optional)
-  firebase_core: ^2.32.0
-  firebase_analytics: ^10.7.0
-  cloud_firestore: ^4.17.5
+  firebase_core: ^4.4.0
+  firebase_analytics: ^12.1.2
+  cloud_firestore: ^6.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

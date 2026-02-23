@@ -1,5 +1,6 @@
 /// Class Provider
 /// Manages class and student data state
+library;
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -20,10 +21,14 @@ class ClassProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Set token from auth provider
+  // Set token from auth provider. When token is cleared (logout),
+  // also clear all in-memory class data to avoid leaking state
+  // between sessions.
   void updateToken(String? token) {
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       _apiService.setToken(token);
+    } else {
+      clearAllData();
     }
   }
 
@@ -39,21 +44,20 @@ class ClassProvider with ChangeNotifier {
 
       if (response['success'] == true && response['classes'] != null) {
         _classes = List<Map<String, dynamic>>.from(response['classes']);
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to fetch classes';
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error fetching classes: ${e.toString()}';
+      _errorMessage = 'Error fetching classes: $e';
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -69,21 +73,21 @@ class ClassProvider with ChangeNotifier {
 
       if (response['success'] == true && response['class'] != null) {
         _currentClass = response['class'];
-        _isLoading = false;
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to fetch class details';
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error fetching class details: ${e.toString()}';
+      _errorMessage = 'Error fetching class details: $e';
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -98,22 +102,23 @@ class ClassProvider with ChangeNotifier {
       final response = await _apiService.getClassStudents(classId);
 
       if (response['success'] == true && response['students'] != null) {
-        _classStudents = List<Map<String, dynamic>>.from(response['students']);
-        _isLoading = false;
+        _classStudents =
+            List<Map<String, dynamic>>.from(response['students']);
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to fetch students';
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error fetching students: ${e.toString()}';
+      _errorMessage = 'Error fetching students: $e';
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
 

@@ -9,7 +9,7 @@ import '../../theme/app_theme.dart';
 import 'attendance_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -65,16 +65,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   message: authProvider.teacher?['email'] ?? 'Teacher',
                   child: PopupMenuButton<void>(
                     itemBuilder: (context) => [
-                      PopupMenuItem<void>(
-                        child: const Text('Profile'),
-                        onTap: () {},
-                      ),
-                      PopupMenuItem<void>(
-                        child: const Text('Settings'),
-                        onTap: () {},
-                      ),
+                      const PopupMenuItem(child: Text('Profile')),
+                      const PopupMenuItem(child: Text('Settings')),
                       const PopupMenuDivider(),
-                      PopupMenuItem<void>(
+                      PopupMenuItem(
                         onTap: _handleLogout,
                         child: const Text('Logout'),
                       ),
@@ -92,9 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Consumer<ClassProvider>(
         builder: (context, classProvider, _) {
           if (classProvider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (classProvider.errorMessage != null) {
@@ -102,11 +94,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: AppTheme.errorColor,
-                  ),
+                  const Icon(Icons.error_outline,
+                      size: 48, color: AppTheme.errorColor),
                   const SizedBox(height: 16),
                   Text(classProvider.errorMessage!),
                   const SizedBox(height: 24),
@@ -122,9 +111,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           if (classProvider.classes.isEmpty) {
-            return const Center(
-              child: Text('No classes found'),
-            );
+            return const Center(child: Text('No classes found'));
           }
 
           return RefreshIndicator(
@@ -132,7 +119,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: ListView(
               padding: const EdgeInsets.all(AppTheme.lg),
               children: [
-                // Greeting
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     return Padding(
@@ -154,11 +140,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                 ),
 
-                // Classes Grid
                 GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    childAspectRatio: 1.0 / 0.5,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1.0,
                     mainAxisSpacing: AppTheme.lg,
                     crossAxisSpacing: AppTheme.lg,
                   ),
@@ -198,10 +184,9 @@ class _ClassCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const _ClassCard({
-    Key? key,
     required this.classData,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -214,6 +199,7 @@ class _ClassCard extends StatelessWidget {
           side: const BorderSide(color: AppTheme.borderColor),
         ),
         child: Container(
+          padding: const EdgeInsets.all(AppTheme.lg),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             gradient: LinearGradient(
@@ -225,12 +211,9 @@ class _ClassCard extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
           ),
-          padding: const EdgeInsets.all(AppTheme.lg),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Header
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -246,10 +229,7 @@ class _ClassCard extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(
-                      Icons.class_,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.class_, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -258,10 +238,14 @@ class _ClassCard extends StatelessWidget {
                       children: [
                         Text(
                           classData['name'] ?? 'Class',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         Text(
                           classData['subject'] ?? 'Subject',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -270,26 +254,33 @@ class _ClassCard extends StatelessWidget {
                 ],
               ),
 
-              // Stats
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _StatItem(
-                    icon: Icons.people,
-                    label: 'Students',
-                    value: '${classData['student_count'] ?? 0}',
-                  ),
-                  _StatItem(
-                    icon: Icons.calendar_today,
-                    label: 'Sessions',
-                    value: '${classData['total_sessions'] ?? 0}',
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: _StatItem(
+                            icon: Icons.people,
+                            label: 'Students',
+                            value: '${classData['student_count'] ?? 0}',
+                          ),
+                        ),
+                        Flexible(
+                          child: _StatItem(
+                            icon: Icons.calendar_today,
+                            label: 'Sessions',
+                            value: '${classData['total_sessions'] ?? 0}',
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
                       color: AppTheme.primaryColor,
                       borderRadius: BorderRadius.circular(6),
@@ -297,17 +288,14 @@ class _ClassCard extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: Colors.white,
-                        ),
+                        Icon(Icons.arrow_forward,
+                            size: 14, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
                           'Mark',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -330,30 +318,23 @@ class _StatItem extends StatelessWidget {
   final String value;
 
   const _StatItem({
-    Key? key,
     required this.icon,
     required this.label,
     required this.value,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: AppTheme.textSecondary,
-        ),
+        Icon(icon, size: 20, color: AppTheme.textSecondary),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        Text(value,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium),
+        Text(label,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

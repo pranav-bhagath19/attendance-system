@@ -1,5 +1,6 @@
 /// Attendance Provider
 /// Manages attendance marking and reporting state
+library;
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -22,10 +23,14 @@ class AttendanceProvider with ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isSyncing => _isSyncing;
 
-  // Set token from auth provider
+  // Set token from auth provider. When token is cleared (logout),
+  // also clear any pending/analytics/report data to avoid leaking
+  // state between sessions.
   void updateToken(String? token) {
-    if (token != null) {
+    if (token != null && token.isNotEmpty) {
       _apiService.setToken(token);
+    } else {
+      clearAttendanceData();
     }
   }
 
@@ -51,6 +56,7 @@ class AttendanceProvider with ChangeNotifier {
 
       if (response['success'] == true) {
         _pendingAttendance[studentId] = status;
+        _errorMessage = null;
         notifyListeners();
         return true;
       } else {
@@ -58,8 +64,12 @@ class AttendanceProvider with ChangeNotifier {
         notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      notifyListeners();
+      return false;
     } catch (e) {
-      _errorMessage = 'Error marking attendance: ${e.toString()}';
+      _errorMessage = 'Error marking attendance: $e';
       notifyListeners();
       return false;
     }
@@ -85,21 +95,21 @@ class AttendanceProvider with ChangeNotifier {
 
       if (response['success'] == true) {
         _pendingAttendance.clear();
-        _isSyncing = false;
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to sync attendance';
-        _isSyncing = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error syncing attendance: ${e.toString()}';
+      _errorMessage = 'Error syncing attendance: $e';
+      return false;
+    } finally {
       _isSyncing = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -118,21 +128,21 @@ class AttendanceProvider with ChangeNotifier {
 
       if (response['success'] == true && response['attendance'] != null) {
         _attendanceReport = response;
-        _isLoading = false;
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to fetch report';
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error fetching report: ${e.toString()}';
+      _errorMessage = 'Error fetching report: $e';
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -148,21 +158,21 @@ class AttendanceProvider with ChangeNotifier {
 
       if (response['success'] == true && response['analytics'] != null) {
         _analytics = response;
-        _isLoading = false;
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to fetch analytics';
-        _isLoading = false;
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error fetching analytics: ${e.toString()}';
+      _errorMessage = 'Error fetching analytics: $e';
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return false;
     }
   }
 
@@ -186,16 +196,16 @@ class AttendanceProvider with ChangeNotifier {
 
       if (response['success'] == true) {
         _errorMessage = null;
-        notifyListeners();
         return true;
       } else {
         _errorMessage = response['error'] ?? 'Failed to update attendance';
-        notifyListeners();
         return false;
       }
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+      return false;
     } catch (e) {
-      _errorMessage = 'Error updating attendance: ${e.toString()}';
-      notifyListeners();
+      _errorMessage = 'Error updating attendance: $e';
       return false;
     } finally {
       _isLoading = false; // ✅ Reset loading state

@@ -1,14 +1,43 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+/// Exception type used for all API-level failures so that
+/// providers can surface clear, user-friendly messages and
+/// avoid silent failures.
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  final dynamic data;
+
+  ApiException(
+    this.message, {
+    this.statusCode,
+    this.data,
+  });
+
+  @override
+  String toString() => 'ApiException($statusCode): $message';
+}
+
+typedef UnauthorizedHandler = Future<void> Function();
 
 class ApiService {
-
   static const String baseUrl =
       'https://attendance-system-1h6c.onrender.com/api';
 
-  late Dio _dio;
-  String? _token;
+  // ✅ SINGLE GLOBAL INSTANCE
+  static final ApiService _instance = ApiService._internal();
 
-  ApiService() {
+  factory ApiService() {
+    return _instance;
+  }
+
+  late final Dio _dio;
+  String? _token;
+  UnauthorizedHandler? _unauthorizedHandler;
+
+  // ✅ private constructor (called only once)
+  ApiService._internal() {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -22,50 +51,131 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          if (_token != null) {
+          if (_token != null && _token!.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $_token';
           }
           handler.next(options);
+        },
+        onError: (DioException error, handler) async {
+          final statusCode = error.response?.statusCode;
+
+          // Centralized logging for easier debugging
+          if (kDebugMode) {
+            debugPrint(
+              'API Error: ${error.requestOptions.method} '
+              '${error.requestOptions.uri} '
+              'status=$statusCode type=${error.type} data=${error.response?.data}',
+            );
+          }
+
+          // Unauthorized -> trigger logout flow once
+          if (statusCode == 401 || statusCode == 403) {
+            if (_unauthorizedHandler != null) {
+              await _unauthorizedHandler!();
+            }
+          }
+
+          handler.next(error);
         },
       ),
     );
   }
 
+  // ================= TOKEN & SESSION HANDLING =================
+
   void setToken(String token) {
     _token = token;
   }
 
+  void clearToken() {
+    _token = null;
+  }
+
+  void setUnauthorizedHandler(UnauthorizedHandler handler) {
+    _unauthorizedHandler = handler;
+  }
+
+  // Wraps Dio calls to always throw ApiException with meaningful
+  // messages instead of leaking raw DioException into the UI layer.
+  Future<Map<String, dynamic>> _request(
+    Future<Response<dynamic>> Function() call,
+  ) async {
+    try {
+      final response = await call();
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      // Normalize non-map payloads
+      return {'success': true, 'data': data};
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      String message;
+
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        message =
+            'The server is taking too long to respond. Please check your connection or try again in a moment.';
+      } else if (statusCode == 401 || statusCode == 403) {
+        message = 'Your session has expired. Please log in again.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        message =
+            'Unable to connect to the server. Please verify your internet connection.';
+      } else if (e.response?.data is Map<String, dynamic> &&
+          (e.response?.data['error'] != null)) {
+        message = e.response!.data['error'].toString();
+      } else {
+        message = 'Unexpected server error. Please try again.';
+      }
+
+      throw ApiException(
+        message,
+        statusCode: statusCode,
+        data: e.response?.data,
+      );
+    } catch (e) {
+      throw ApiException('Unexpected error: $e');
+    }
+  }
+
+  // ================= AUTH =================
+
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
-    return response.data;
+    return _request(
+      () => _dio.post(
+        '/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      ),
+    );
   }
 
   Future<void> logout() async {
-    await _dio.post('/auth/logout');
+    await _request(() => _dio.post('/auth/logout'));
   }
 
   Future<Map<String, dynamic>> getCurrentTeacher() async {
-    final response = await _dio.get('/auth/me');
-    return response.data;
+    return _request(() => _dio.get('/auth/me'));
   }
 
+  // ================= CLASSES =================
+
   Future<Map<String, dynamic>> getClasses() async {
-    final response = await _dio.get('/teacher/classes');
-    return response.data;
+    return _request(() => _dio.get('/teacher/classes'));
   }
 
   Future<Map<String, dynamic>> getClassDetails(String classId) async {
-    final response = await _dio.get('/teacher/class/$classId');
-    return response.data;
+    return _request(() => _dio.get('/teacher/class/$classId'));
   }
 
   Future<Map<String, dynamic>> getClassStudents(String classId) async {
-    final response = await _dio.get('/teacher/class/$classId/students');
-    return response.data;
+    return _request(() => _dio.get('/teacher/class/$classId/students'));
   }
+
+  // ================= ATTENDANCE =================
 
   Future<Map<String, dynamic>> markAttendance({
     required String studentId,
@@ -74,14 +184,18 @@ class ApiService {
     required String date,
     String? notes,
   }) async {
-    final response = await _dio.post('/attendance/mark', data: {
-      'student_id': studentId,
-      'class_id': classId,
-      'status': status,
-      'date': date,
-      'notes': notes,
-    });
-    return response.data;
+    return _request(
+      () => _dio.post(
+        '/attendance/mark',
+        data: {
+          'student_id': studentId,
+          'class_id': classId,
+          'status': status,
+          'date': date,
+          'notes': notes,
+        },
+      ),
+    );
   }
 
   Future<Map<String, dynamic>> batchMarkAttendance({
@@ -89,23 +203,28 @@ class ApiService {
     required List<Map<String, dynamic>> attendanceData,
     required String date,
   }) async {
-    final response = await _dio.post('/attendance/batch-mark', data: {
-      'class_id': classId,
-      'attendance_data': attendanceData,
-      'date': date,
-    });
-    return response.data;
+    return _request(
+      () => _dio.post(
+        '/attendance/batch-mark',
+        data: {
+          'class_id': classId,
+          'attendance_data': attendanceData,
+          'date': date,
+        },
+      ),
+    );
   }
 
   Future<Map<String, dynamic>> getAttendanceReport(
     String classId, {
     required String date,
   }) async {
-    final response = await _dio.get(
-      '/attendance/class/$classId',
-      queryParameters: {'date': date},
+    return _request(
+      () => _dio.get(
+        '/attendance/class/$classId',
+        queryParameters: {'date': date},
+      ),
     );
-    return response.data;
   }
 
   Future<Map<String, dynamic>> updateAttendance(
@@ -113,16 +232,19 @@ class ApiService {
     required String status,
     String? notes,
   }) async {
-    final response = await _dio.put('/attendance/$attendanceId', data: {
-      'status': status,
-      'notes': notes,
-    });
-    return response.data;
+    return _request(
+      () => _dio.put(
+        '/attendance/$attendanceId',
+        data: {
+          'status': status,
+          'notes': notes,
+        },
+      ),
+    );
   }
 
   Future<Map<String, dynamic>> getAttendanceAnalytics(String classId) async {
-    final response = await _dio.get('/attendance/analytics/$classId');
-    return response.data;
+    return _request(() => _dio.get('/attendance/analytics/$classId'));
   }
 
   Future<bool> healthCheck() async {

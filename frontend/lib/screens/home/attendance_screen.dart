@@ -4,6 +4,7 @@
 /// Left: Absent (Red)
 /// Down: Late (Orange)
 /// Up: View Details
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,11 +20,11 @@ class AttendanceScreen extends StatefulWidget {
   final String subject;
 
   const AttendanceScreen({
-    Key? key,
+    super.key,
     required this.classId,
     required this.className,
     required this.subject,
-  }) : super(key: key);
+  });
 
   @override
   State<AttendanceScreen> createState() => _AttendanceScreenState();
@@ -212,11 +213,44 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<ClassProvider>().isLoading;
+    final errorMessage = context.watch<ClassProvider>().errorMessage;
 
-    if (isLoading || students.isEmpty) {
+    if (isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Mark Attendance')),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Mark Attendance')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 48,
+                color: AppTheme.errorColor,
+              ),
+              const SizedBox(height: 16),
+              Text(errorMessage),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadStudents,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (students.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Mark Attendance')),
+        body: const Center(child: Text('No students found in this class')),
       );
     }
 
@@ -388,14 +422,14 @@ class StudentCard extends StatefulWidget {
   final VoidCallback onSwipeUp;
 
   const StudentCard({
-    Key? key,
+    super.key,
     required this.student,
     required this.isActive,
     required this.onSwipeRight,
     required this.onSwipeLeft,
     required this.onSwipeDown,
     required this.onSwipeUp,
-  }) : super(key: key);
+  });
 
   @override
   State<StudentCard> createState() => _StudentCardState();
@@ -514,8 +548,19 @@ class _StudentCardState extends State<StudentCard>
                       child: Image.network(
                         widget.student['photo'],
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.person, size: 60),
+                        loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) {
+                          return const Icon(Icons.person, size: 60);
+                        },
                       ),
                     )
                   : const Icon(Icons.person, size: 60),
@@ -618,12 +663,12 @@ class _GestureHint extends StatelessWidget {
   final double opacity;
 
   const _GestureHint({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
     required this.opacity,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -657,12 +702,12 @@ class _StudentDetailsPanel extends StatelessWidget {
   final VoidCallback onMarkLate;
 
   const _StudentDetailsPanel({
-    Key? key,
+    super.key,
     required this.student,
     required this.onMarkPresent,
     required this.onMarkAbsent,
     required this.onMarkLate,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -704,6 +749,19 @@ class _StudentDetailsPanel extends StatelessWidget {
                             child: Image.network(
                               student['photo'],
                               fit: BoxFit.cover,
+                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (_, __, ___) {
+                                return const Icon(Icons.person, size: 50);
+                              },
                             ),
                           )
                         : const Icon(Icons.person, size: 50),
@@ -788,10 +846,10 @@ class _DetailItem extends StatelessWidget {
   final String value;
 
   const _DetailItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -816,11 +874,11 @@ class _StatCounter extends StatelessWidget {
   final Color color;
 
   const _StatCounter({
-    Key? key,
+    super.key,
     required this.label,
     required this.count,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

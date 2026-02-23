@@ -1,5 +1,6 @@
 /// Attendance Report Screen
 /// Shows summary of marked attendance with edit capability
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,11 +15,11 @@ class AttendanceReportScreen extends StatefulWidget {
   final String date;
 
   const AttendanceReportScreen({
-    Key? key,
+    super.key,
     required this.classId,
     required this.className,
     required this.date,
-  }) : super(key: key);
+  });
 
   @override
   State<AttendanceReportScreen> createState() => _AttendanceReportScreenState();
@@ -208,11 +209,11 @@ class _SummaryItem extends StatelessWidget {
   final Color color;
 
   const _SummaryItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.count,
     required this.color,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -250,10 +251,10 @@ class _AttendanceRow extends StatefulWidget {
   final Function(String) onStatusChanged;
 
   const _AttendanceRow({
-    Key? key,
+    super.key,
     required this.record,
     required this.onStatusChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<_AttendanceRow> createState() => _AttendanceRowState();

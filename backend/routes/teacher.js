@@ -46,12 +46,12 @@ router.get('/classes', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /api/teacher/class/:classId
+ * GET /api/teacher/class/:class_id
  * Get specific class details with all students
  */
-router.get('/class/:classId', authMiddleware, async (req, res) => {
+router.get('/class/:class_id', authMiddleware, async (req, res) => {
   try {
-    const classData = await getClassWithStudents(req.params.classId);
+    const classData = await getClassWithStudents(req.params.class_id);
 
     if (!classData) {
       return res.status(404).json({
@@ -98,14 +98,14 @@ router.get('/class/:classId', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /api/teacher/class/:classId/students
+ * GET /api/teacher/class/:class_id/students
  * Get list of students for swipe attendance
  * Returns students optimized for card display
  */
-router.get('/class/:classId/students', authMiddleware, async (req, res) => {
+router.get('/class/:class_id/students', authMiddleware, async (req, res) => {
   try {
     // Verify teacher owns this class
-    const classDoc = await db.collection('classes').doc(req.params.classId).get();
+    const classDoc = await db.collection('classes').doc(req.params.class_id).get();
     
     if (!classDoc.exists) {
       return res.status(404).json({
@@ -119,7 +119,7 @@ router.get('/class/:classId/students', authMiddleware, async (req, res) => {
       });
     }
 
-    const students = await getStudentsByClass(req.params.classId);
+    const students = await getStudentsByClass(req.params.class_id);
 
     // Format students for card display
     const formattedStudents = students.map(student => ({

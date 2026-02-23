@@ -1,10 +1,15 @@
 /// Splash Screen
 /// App startup and branding screen
+library;
 
 import 'package:flutter/material.dart';
 
+/// Simple splash / branding screen used while the app is restoring
+/// the persisted auth session or while Render backend is waking up.
+/// It intentionally does **not** perform any navigation itself – the
+/// root widget decides when to show the dashboard or login screen.
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -34,13 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _animationController.forward();
-
-    // Navigate after delay
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
-      }
-    });
   }
 
   @override

@@ -1,5 +1,6 @@
 /// Login Screen
 /// Teacher authentication screen with email and password fields
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -32,17 +33,21 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-
+  
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = context.read<AuthProvider>();
+
       final success = await authProvider.login(
+        context,
         _emailController.text.trim(),
         _passwordController.text,
       );
 
       if (success && mounted) {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
+        // Navigate to dashboard; the root Consumer<AuthProvider>
+        // will also reflect the logged-in state.
+        Navigator.pushReplacementNamed(context, '/dashboard');
       }
     }
   }

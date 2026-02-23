@@ -1,17 +1,19 @@
 /// Attendance Management App
 /// Main entry point for Flutter application
+library;
 
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:firebase_core/firebase_core.dart';
 
 import 'firebase_options.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/home/dashboard_screen.dart';
+import 'providers/attendance_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/class_provider.dart';
-import 'providers/attendance_provider.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/home/dashboard_screen.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -70,18 +72,24 @@ class MyApp extends StatelessWidget {
 
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
-            if (authProvider.token != null &&
-                authProvider.token!.isNotEmpty) {
-              return const DashboardScreen();
-            } else {
-              return const LoginScreen();
+            if (authProvider.isInitializing) {
+              // While restoring session / verifying token, show splash.
+              return const SplashScreen();
             }
+
+            if (authProvider.isLoggedIn) {
+              return const DashboardScreen();
+            }
+
+            return const LoginScreen();
           },
         ),
 
         routes: {
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
+          // Backwards-compatible alias in case '/home' is used anywhere.
+          '/home': (_) => const DashboardScreen(),
         },
       ),
     );
