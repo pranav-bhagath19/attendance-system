@@ -8,3 +8,5 @@ frontend/.flutter-plugins-dependencies
 *.log
 nul
 backend/nul
+node_modules/
+.
