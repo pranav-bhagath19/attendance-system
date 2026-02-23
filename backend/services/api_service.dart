@@ -31,15 +31,22 @@ class ApiService {
     );
   }
 
+  // ================= TOKEN =================
+
   void setToken(String token) {
     _token = token;
   }
 
+  // ================= AUTH =================
+
   Future<Map<String, dynamic>> login(String email, String password) async {
-    final response = await _dio.post('/auth/login', data: {
-      'email': email,
-      'password': password,
-    });
+    final response = await _dio.post(
+      '/auth/login',
+      data: {
+        'email': email,
+        'password': password,
+      },
+    );
     return response.data;
   }
 
@@ -51,6 +58,8 @@ class ApiService {
     final response = await _dio.get('/auth/me');
     return response.data;
   }
+
+  // ================= CLASSES =================
 
   Future<Map<String, dynamic>> getClasses() async {
     final response = await _dio.get('/teacher/classes');
@@ -67,6 +76,8 @@ class ApiService {
     return response.data;
   }
 
+  // ================= ATTENDANCE =================
+
   Future<Map<String, dynamic>> markAttendance({
     required String studentId,
     required String classId,
@@ -74,13 +85,16 @@ class ApiService {
     required String date,
     String? notes,
   }) async {
-    final response = await _dio.post('/attendance/mark', data: {
-      'student_id': studentId,
-      'class_id': classId,
-      'status': status,
-      'date': date,
-      'notes': notes,
-    });
+    final response = await _dio.post(
+      '/attendance/mark',
+      data: {
+        'student_id': studentId,
+        'class_id': classId,
+        'status': status,
+        'date': date,
+        'notes': notes,
+      },
+    );
     return response.data;
   }
 
@@ -89,11 +103,14 @@ class ApiService {
     required List<Map<String, dynamic>> attendanceData,
     required String date,
   }) async {
-    final response = await _dio.post('/attendance/batch-mark', data: {
-      'class_id': classId,
-      'attendance_data': attendanceData,
-      'date': date,
-    });
+    final response = await _dio.post(
+      '/attendance/batch-mark',
+      data: {
+        'class_id': classId,
+        'attendance_data': attendanceData,
+        'date': date,
+      },
+    );
     return response.data;
   }
 
@@ -113,10 +130,13 @@ class ApiService {
     required String status,
     String? notes,
   }) async {
-    final response = await _dio.put('/attendance/$attendanceId', data: {
-      'status': status,
-      'notes': notes,
-    });
+    final response = await _dio.put(
+      '/attendance/$attendanceId',
+      data: {
+        'status': status,
+        'notes': notes,
+      },
+    );
     return response.data;
   }
 
@@ -124,6 +144,8 @@ class ApiService {
     final response = await _dio.get('/attendance/analytics/$classId');
     return response.data;
   }
+
+  // ================= HEALTH =================
 
   Future<bool> healthCheck() async {
     try {
