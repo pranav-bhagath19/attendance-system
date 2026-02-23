@@ -68,6 +68,14 @@ app.use('/api/teacher', require('./routes/teacher'));
 
 // Attendance Routes
 app.use('/api/attendance', require('./routes/attendance'));
+// Root route (for Render health check)
+app.get('/', (req, res) => {
+  res.json({
+    status: 'Attendance API is running',
+    message: 'Backend server is operational',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 // Health Check
 app.get('/api/health', (req, res) => {
