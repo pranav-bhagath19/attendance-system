@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'firebase_options.dart';
 import 'providers/attendance_provider.dart';
 import 'providers/auth_provider.dart';
@@ -14,6 +13,8 @@ import 'providers/class_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/dashboard_screen.dart';
 import 'screens/splash_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/settings/settings_screen.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
       providers: [
         // Auth Provider
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(sharedPreferences),
+          create: (_) => AuthProvider(),
         ),
 
         // Class Provider
@@ -69,27 +70,25 @@ class MyApp extends StatelessWidget {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.light,
         debugShowCheckedModeBanner: false,
-
         home: Consumer<AuthProvider>(
-          builder: (context, authProvider, _) {
-            if (authProvider.isInitializing) {
-              // While restoring session / verifying token, show splash.
+          builder: (context, auth, _) {
+            if (auth.isLoading) {
               return const SplashScreen();
             }
 
-            if (authProvider.isLoggedIn) {
+            if (auth.user == null) {
+              return const LoginScreen();
+            } else {
               return const DashboardScreen();
             }
-
-            return const LoginScreen();
           },
         ),
-
         routes: {
           '/login': (_) => const LoginScreen(),
           '/dashboard': (_) => const DashboardScreen(),
-          // Backwards-compatible alias in case '/home' is used anywhere.
           '/home': (_) => const DashboardScreen(),
+          '/profile': (_) => const ProfileScreen(),
+          '/settings': (_) => const SettingsScreen(),
         },
       ),
     );

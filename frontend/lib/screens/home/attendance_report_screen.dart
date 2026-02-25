@@ -26,6 +26,7 @@ class AttendanceReportScreen extends StatefulWidget {
 }
 
 class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
+  bool _isSaving = false;
   @override
   void initState() {
     super.initState();
@@ -77,15 +78,12 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
             report['attendance'] ?? [],
           );
 
-          final presentCount = attendance
-              .where((a) => a['status'] == 'PRESENT')
-              .length;
-          final absentCount = attendance
-              .where((a) => a['status'] == 'ABSENT')
-              .length;
-          final lateCount = attendance
-              .where((a) => a['status'] == 'LATE')
-              .length;
+          final presentCount =
+              attendance.where((a) => a['status'] == 'PRESENT').length;
+          final absentCount =
+              attendance.where((a) => a['status'] == 'ABSENT').length;
+          final lateCount =
+              attendance.where((a) => a['status'] == 'LATE').length;
 
           return Column(
             children: [
@@ -161,9 +159,11 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
+                        onPressed: _isSaving
+                            ? null
+                            : () {
+                                Navigator.pop(context);
+                              },
                         icon: const Icon(Icons.close),
                         label: const Text('Discard'),
                       ),
@@ -171,12 +171,19 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          // Save changes
-                          _saveChanges(attendance);
-                        },
-                        icon: const Icon(Icons.check),
-                        label: const Text('Save'),
+                        onPressed: _isSaving
+                            ? null
+                            : () {
+                                _saveChanges(attendance);
+                              },
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : const Icon(Icons.check),
+                        label: const Text('Save Changes'),
                       ),
                     ),
                   ],
@@ -190,13 +197,44 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
   }
 
   Future<void> _saveChanges(List<Map<String, dynamic>> attendance) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Attendance saved successfully')),
-    );
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    final formatData = attendance
+        .map((a) {
+          return {
+            'student_id':
+                a['student_id']?.toString() ?? a['id']?.toString() ?? '',
+            'status': a['status'],
+            'notes': a['notes'],
+          };
+        })
+        .where((a) => a['student_id'] != '')
+        .toList();
+
+    await context.read<AttendanceProvider>().submitAttendance(
+          widget.classId,
+          formatData,
+        );
+
+    if (!mounted) return;
+
+    setState(() => _isSaving = false);
+
+    if (context.read<AttendanceProvider>().errorMessage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Attendance updated successfully')),
+      );
       Navigator.pop(context);
-      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.read<AttendanceProvider>().errorMessage ??
+                'Failed to update attendance',
+          ),
+        ),
+      );
     }
   }
 }

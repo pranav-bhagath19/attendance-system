@@ -3,6 +3,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/api_service.dart';
 
 class ClassProvider with ChangeNotifier {
@@ -34,27 +36,27 @@ class ClassProvider with ChangeNotifier {
 
   // ============ FETCH CLASSES ============
 
-  Future<bool> fetchClasses() async {
+  Future<void> fetchClasses() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.getClasses();
+      final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      if (response['success'] == true && response['classes'] != null) {
-        _classes = List<Map<String, dynamic>>.from(response['classes']);
-        return true;
-      } else {
-        _errorMessage = response['error'] ?? 'Failed to fetch classes';
-        return false;
-      }
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      return false;
+      final snapshot = await FirebaseFirestore.instance
+          .collection("classes")
+          .where("teacherId", isEqualTo: uid)
+          .get();
+
+      _classes = snapshot.docs
+          .map((doc) => {
+                "id": doc.id,
+                ...doc.data(),
+              })
+          .toList();
     } catch (e) {
       _errorMessage = 'Error fetching classes: $e';
-      return false;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -93,29 +95,26 @@ class ClassProvider with ChangeNotifier {
 
   // ============ FETCH CLASS STUDENTS ============
 
-  Future<bool> fetchClassStudents(String classId) async {
+  Future<void> fetchClassStudents(String classId) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.getClassStudents(classId);
+      final snapshot = await FirebaseFirestore.instance
+          .collection("classes")
+          .doc(classId)
+          .collection("students")
+          .get();
 
-      if (response['success'] == true && response['students'] != null) {
-        _classStudents =
-            List<Map<String, dynamic>>.from(response['students']);
-        _errorMessage = null;
-        return true;
-      } else {
-        _errorMessage = response['error'] ?? 'Failed to fetch students';
-        return false;
-      }
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      return false;
+      _classStudents = snapshot.docs
+          .map((doc) => {
+                "id": doc.id,
+                ...doc.data(),
+              })
+          .toList();
     } catch (e) {
       _errorMessage = 'Error fetching students: $e';
-      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

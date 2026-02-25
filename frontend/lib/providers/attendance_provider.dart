@@ -3,6 +3,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/api_service.dart';
 
 class AttendanceProvider with ChangeNotifier {
@@ -77,36 +79,26 @@ class AttendanceProvider with ChangeNotifier {
 
   // ============ BATCH MARK ATTENDANCE ============
 
-  Future<bool> batchMarkAttendance({
-    required String classId,
-    required List<Map<String, dynamic>> attendanceData,
-    required String date,
-  }) async {
+  Future<void> submitAttendance(
+      String classId, List<Map<String, dynamic>> attendanceData) async {
     _isSyncing = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _apiService.batchMarkAttendance(
-        classId: classId,
-        attendanceData: attendanceData,
-        date: date,
-      );
+      final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      if (response['success'] == true) {
-        _pendingAttendance.clear();
-        _errorMessage = null;
-        return true;
-      } else {
-        _errorMessage = response['error'] ?? 'Failed to sync attendance';
-        return false;
-      }
-    } on ApiException catch (e) {
-      _errorMessage = e.message;
-      return false;
+      await FirebaseFirestore.instance.collection("attendance").add({
+        "classId": classId,
+        "teacherId": uid,
+        "date": Timestamp.now(),
+        "students": attendanceData,
+      });
+
+      _pendingAttendance.clear();
+      _errorMessage = null;
     } catch (e) {
       _errorMessage = 'Error syncing attendance: $e';
-      return false;
     } finally {
       _isSyncing = false;
       notifyListeners();

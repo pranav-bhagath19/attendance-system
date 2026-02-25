@@ -29,7 +29,6 @@ dependencies:
 
   # Card Swiping
   swipeable_card_stack: ^0.0.5
-  # appinio_swiper: ^0.1.0  # Removed - package not found in pub.dev
 
   # Animations & Transitions
   flutter_animate: ^4.5.0
@@ -51,20 +50,26 @@ dependencies:
   intl: ^0.20.2
   table_calendar: ^3.1.0
 
+
+
+  # Swipe experience
+  audioplayers: ^5.2.1
+  vibration: ^3.1.7
+  device_info_plus: ^12.3.0
+
   # Utilities
   uuid: ^4.3.3
   connectivity_plus: ^7.0.0
-  device_info_plus: ^12.3.0
 
-  # Analytics & Monitoring (Optional)
-  firebase_core: ^4.4.0
-  firebase_analytics: ^12.1.2
-  cloud_firestore: ^6.1.2
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_analytics: ^11.3.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
 
 flutter:
@@ -72,6 +77,7 @@ flutter:
 
   assets:
     - assets/fonts/
+    - assets/sounds/swipe.mp3
 
   fonts:
     - family: Poppins

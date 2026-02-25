@@ -33,21 +33,20 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     super.dispose();
   }
-  
+
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final authProvider = context.read<AuthProvider>();
-
-      final success = await authProvider.login(
-        context,
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-
-      if (success && mounted) {
-        // Navigate to dashboard; the root Consumer<AuthProvider>
-        // will also reflect the logged-in state.
-        Navigator.pushReplacementNamed(context, '/dashboard');
+      try {
+        await context.read<AuthProvider>().login(
+              _emailController.text.trim(),
+              _passwordController.text,
+            );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString())),
+          );
+        }
       }
     }
   }
@@ -169,13 +168,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             width: double.infinity,
                             height: 48,
                             child: ElevatedButton(
-                              onPressed: authProvider.isLoading ? null : _handleLogin,
+                              onPressed:
+                                  authProvider.isLoading ? null : _handleLogin,
                               child: authProvider.isLoading
                                   ? const SizedBox(
                                       width: 24,
                                       height: 24,
                                       child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
                                           Colors.white,
                                         ),
                                         strokeWidth: 2,
@@ -198,11 +199,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       // Error Message
                       Consumer<AuthProvider>(
                         builder: (context, authProvider, _) {
-                          if (authProvider.errorMessage != null) {
+                          if (authProvider.error != null) {
                             return Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: AppTheme.errorColor.withValues(alpha: 0.1),
+                                color:
+                                    AppTheme.errorColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(color: AppTheme.errorColor),
                               ),
@@ -215,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      authProvider.errorMessage!,
+                                      authProvider.error!,
                                       style: const TextStyle(
                                         color: AppTheme.errorColor,
                                         fontSize: 13,
@@ -241,7 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: BoxDecoration(
                     color: Colors.blue.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withValues(alpha: 0.2)),
+                    border:
+                        Border.all(color: Colors.blue.withValues(alpha: 0.2)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
