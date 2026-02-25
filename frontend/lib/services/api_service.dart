@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Exception type used for all API-level failures so that
 /// providers can surface clear, user-friendly messages and
@@ -33,7 +34,6 @@ class ApiService {
   }
 
   late final Dio _dio;
-  String? _token;
   UnauthorizedHandler? _unauthorizedHandler;
 
   // ✅ private constructor (called only once)
@@ -50,10 +50,20 @@ class ApiService {
 
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (_token != null && _token!.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $_token';
+        onRequest: (options, handler) async {
+          // Dynamically fetch Firebase ID token for every request
+          try {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              final token = await user.getIdToken(true);
+              if (token != null) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
+            }
+          } catch (e) {
+            debugPrint('Failed to get Firebase token: $e');
           }
+
           handler.next(options);
         },
         onError: (DioException error, handler) async {
@@ -82,14 +92,6 @@ class ApiService {
   }
 
   // ================= TOKEN & SESSION HANDLING =================
-
-  void setToken(String token) {
-    _token = token;
-  }
-
-  void clearToken() {
-    _token = null;
-  }
 
   void setUnauthorizedHandler(UnauthorizedHandler handler) {
     _unauthorizedHandler = handler;

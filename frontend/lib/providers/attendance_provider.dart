@@ -29,9 +29,7 @@ class AttendanceProvider with ChangeNotifier {
   // also clear any pending/analytics/report data to avoid leaking
   // state between sessions.
   void updateToken(String? token) {
-    if (token != null && token.isNotEmpty) {
-      _apiService.setToken(token);
-    } else {
+    if (token == null || token.isEmpty) {
       clearAttendanceData();
     }
   }
@@ -88,12 +86,16 @@ class AttendanceProvider with ChangeNotifier {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      await FirebaseFirestore.instance.collection("attendance").add({
-        "classId": classId,
-        "teacherId": uid,
+      final docData = {
+        "class_id": classId,
+        "teacher_id": uid,
         "date": Timestamp.now(),
-        "students": attendanceData,
-      });
+        "records": attendanceData,
+      };
+
+      debugPrint("Submitting attendance: $docData");
+
+      await FirebaseFirestore.instance.collection("attendance").add(docData);
 
       _pendingAttendance.clear();
       _errorMessage = null;

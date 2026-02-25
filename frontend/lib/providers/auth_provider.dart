@@ -54,21 +54,41 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadTeacherData() async {
     if (user == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection("teachers")
-        .doc(user!.uid)
-        .get();
+    final docRef =
+        FirebaseFirestore.instance.collection("teachers").doc(user!.uid);
 
+    final doc = await docRef.get();
+
+    // STEP 1 — if teacher doc does not exist → create automatically
     if (!doc.exists) {
-      await logout();
-      throw Exception("Not authorized teacher");
+      await docRef.set({
+        "email": user!.email,
+        "role": "teacher",
+        "active": true,
+        "created_at": FieldValue.serverTimestamp(),
+      });
+
+      teacherData = {
+        "email": user!.email,
+        "role": "teacher",
+        "active": true,
+      };
+
+      return;
     }
 
     teacherData = doc.data();
 
-    if (teacherData?["active"] != true) {
-      await logout();
-      throw Exception("Account disabled");
+    // STEP 2 — if active field missing → assume active and update DB
+    if (!teacherData!.containsKey("active")) {
+      await docRef.update({"active": true});
+      teacherData!["active"] = true;
+    }
+
+    // STEP 3 — block only if explicitly disabled
+    if (teacherData!["active"] == false) {
+      await FirebaseAuth.instance.signOut();
+      throw Exception("Your account has been disabled. Contact admin.");
     }
   }
 

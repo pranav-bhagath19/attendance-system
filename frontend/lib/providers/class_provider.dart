@@ -27,9 +27,7 @@ class ClassProvider with ChangeNotifier {
   // also clear all in-memory class data to avoid leaking state
   // between sessions.
   void updateToken(String? token) {
-    if (token != null && token.isNotEmpty) {
-      _apiService.setToken(token);
-    } else {
+    if (token == null || token.isEmpty) {
       clearAllData();
     }
   }
@@ -43,12 +41,10 @@ class ClassProvider with ChangeNotifier {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      print("Current UID : $uid");
       final snapshot = await FirebaseFirestore.instance
           .collection("classes")
           .where("teacher_id", isEqualTo: uid)
           .get();
-      print("Classes found: ${snapshot.docs.length}");
       _classes = snapshot.docs
           .map((doc) => {
                 "id": doc.id,
