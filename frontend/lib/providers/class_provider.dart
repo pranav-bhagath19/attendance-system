@@ -43,12 +43,12 @@ class ClassProvider with ChangeNotifier {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
-
+      print("Current UID : $uid");
       final snapshot = await FirebaseFirestore.instance
           .collection("classes")
-          .where("teacherId", isEqualTo: uid)
+          .where("teacher_id", isEqualTo: uid)
           .get();
-
+      print("Classes found: ${snapshot.docs.length}");
       _classes = snapshot.docs
           .map((doc) => {
                 "id": doc.id,
@@ -102,9 +102,8 @@ class ClassProvider with ChangeNotifier {
 
     try {
       final snapshot = await FirebaseFirestore.instance
-          .collection("classes")
-          .doc(classId)
           .collection("students")
+          .where("class_id", isEqualTo: classId)
           .get();
 
       _classStudents = snapshot.docs
