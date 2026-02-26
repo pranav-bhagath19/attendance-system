@@ -84,7 +84,12 @@ class AttendanceProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final uid = FirebaseAuth.instance.currentUser!.uid;
+      if (classId.isEmpty) throw Exception("class_id must exist");
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) throw Exception("Unauthorized: Not logged in");
+      if (attendanceData.isEmpty) throw Exception("records must not be empty");
+
+      final uid = user.uid;
 
       final docData = {
         "class_id": classId,
@@ -99,6 +104,9 @@ class AttendanceProvider with ChangeNotifier {
 
       _pendingAttendance.clear();
       _errorMessage = null;
+
+      // Auto-refresh analytics after saving
+      fetchAnalytics(classId);
     } catch (e) {
       _errorMessage = 'Error syncing attendance: $e';
     } finally {

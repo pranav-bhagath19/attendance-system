@@ -210,11 +210,6 @@ class _StudentAnalyticsCard extends StatelessWidget {
                   color: AppTheme.successGreen,
                 ),
                 _StatColumn(
-                  label: 'Late',
-                  value: '${student['late']}',
-                  color: AppTheme.lateOrange,
-                ),
-                _StatColumn(
                   label: 'Absent',
                   value: '${student['absent']}',
                   color: AppTheme.absentRed,

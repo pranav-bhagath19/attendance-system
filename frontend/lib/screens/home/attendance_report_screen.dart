@@ -35,7 +35,6 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
   List<Map<String, dynamic>> _mergedAttendance = [];
   int _presentCount = 0;
   int _absentCount = 0;
-  int _lateCount = 0;
 
   @override
   void initState() {
@@ -127,7 +126,6 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
         _mergedAttendance.where((a) => a['status'] == 'PRESENT').length;
     _absentCount =
         _mergedAttendance.where((a) => a['status'] == 'ABSENT').length;
-    _lateCount = _mergedAttendance.where((a) => a['status'] == 'LATE').length;
   }
 
   @override
@@ -194,11 +192,6 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
                     label: 'Present',
                     count: _presentCount,
                     color: AppTheme.successGreen,
-                  ),
-                  _SummaryItem(
-                    label: 'Late',
-                    count: _lateCount,
-                    color: AppTheme.lateOrange,
                   ),
                   _SummaryItem(
                     label: 'Absent',
@@ -392,8 +385,6 @@ class _AttendanceRowState extends State<_AttendanceRow> {
         return AppTheme.successGreen;
       case 'ABSENT':
         return AppTheme.absentRed;
-      case 'LATE':
-        return AppTheme.lateOrange;
       default:
         return AppTheme.textTertiary;
     }
@@ -405,8 +396,6 @@ class _AttendanceRowState extends State<_AttendanceRow> {
         return '✓ Present';
       case 'ABSENT':
         return '✗ Absent';
-      case 'LATE':
-        return '⏱ Late';
       default:
         return 'Not Marked';
     }
@@ -456,16 +445,6 @@ class _AttendanceRowState extends State<_AttendanceRow> {
                     Icon(Icons.check_circle, color: AppTheme.successGreen),
                     SizedBox(width: 8),
                     Text('Present'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'LATE',
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule, color: AppTheme.lateOrange),
-                    SizedBox(width: 8),
-                    Text('Late'),
                   ],
                 ),
               ),

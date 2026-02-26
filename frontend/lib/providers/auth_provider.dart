@@ -61,8 +61,11 @@ class AuthProvider extends ChangeNotifier {
 
     // STEP 1 — if teacher doc does not exist → create automatically
     if (!doc.exists) {
+      final defaultName = user!.email?.split('@').first ?? 'Teacher';
       await docRef.set({
         "email": user!.email,
+        "name": defaultName,
+        "department": "Not Assigned",
         "role": "teacher",
         "active": true,
         "created_at": FieldValue.serverTimestamp(),
@@ -70,6 +73,8 @@ class AuthProvider extends ChangeNotifier {
 
       teacherData = {
         "email": user!.email,
+        "name": defaultName,
+        "department": "Not Assigned",
         "role": "teacher",
         "active": true,
       };
@@ -79,10 +84,28 @@ class AuthProvider extends ChangeNotifier {
 
     teacherData = doc.data();
 
-    // STEP 2 — if active field missing → assume active and update DB
+    // STEP 2 — if fields missing → auto update DB
+    Map<String, dynamic> updates = {};
     if (!teacherData!.containsKey("active")) {
-      await docRef.update({"active": true});
+      updates["active"] = true;
       teacherData!["active"] = true;
+    }
+    if (!teacherData!.containsKey("name")) {
+      final defaultName = user!.email?.split('@').first ?? 'Teacher';
+      updates["name"] = defaultName;
+      teacherData!["name"] = defaultName;
+    }
+    if (!teacherData!.containsKey("department")) {
+      updates["department"] = "Not Assigned";
+      teacherData!["department"] = "Not Assigned";
+    }
+    if (!teacherData!.containsKey("role")) {
+      updates["role"] = "teacher";
+      teacherData!["role"] = "teacher";
+    }
+
+    if (updates.isNotEmpty) {
+      await docRef.update(updates);
     }
 
     // STEP 3 — block only if explicitly disabled

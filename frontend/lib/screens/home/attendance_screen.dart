@@ -154,8 +154,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       _completeSwipe("PRESENT", drag);
     } else if (drag.dx < -_swipeThreshold) {
       _completeSwipe("ABSENT", drag);
-    } else if (drag.dy > _swipeThreshold) {
-      _completeSwipe("LATE", drag);
     } else {
       setState(() => drag = Offset.zero);
     }
@@ -240,7 +238,6 @@ class _AttendanceScreenState extends State<AttendanceScreen>
             ),
           if (drag.dx > 20) _overlay("PRESENT", Colors.green),
           if (drag.dx < -20) _overlay("ABSENT", Colors.red),
-          if (drag.dy > 20) _overlay("LATE", Colors.orange),
         ],
       ),
     );

@@ -74,20 +74,18 @@ class ProfileScreen extends StatelessWidget {
                         title: const Text('Email'),
                         subtitle: Text(user?['email'] ?? 'Not set'),
                       ),
+                      const Divider(),
+                      ListTile(
+                        leading: const Icon(Icons.business,
+                            color: AppTheme.textSecondary),
+                        title: const Text('Department'),
+                        subtitle: Text(user?['department'] ?? 'Not set'),
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: AppTheme.xl),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Edit profile coming soon!')),
-                  );
-                },
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit Profile'),
-              ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () => _handleLogout(context),

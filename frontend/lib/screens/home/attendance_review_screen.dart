@@ -178,8 +178,6 @@ class _ReviewRow extends StatelessWidget {
         return AppTheme.successGreen;
       case 'ABSENT':
         return AppTheme.absentRed;
-      case 'LATE':
-        return AppTheme.lateOrange;
       default:
         return AppTheme.textTertiary;
     }
@@ -191,8 +189,6 @@ class _ReviewRow extends StatelessWidget {
         return '✓ Present';
       case 'ABSENT':
         return '✗ Absent';
-      case 'LATE':
-        return '⏱ Late';
       default:
         return 'Not Marked';
     }
@@ -234,16 +230,6 @@ class _ReviewRow extends StatelessWidget {
                     Icon(Icons.check_circle, color: AppTheme.successGreen),
                     SizedBox(width: 8),
                     Text('Present'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'LATE',
-                child: Row(
-                  children: [
-                    Icon(Icons.schedule, color: AppTheme.lateOrange),
-                    SizedBox(width: 8),
-                    Text('Late'),
                   ],
                 ),
               ),
