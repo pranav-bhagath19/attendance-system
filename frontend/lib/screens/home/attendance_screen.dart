@@ -71,7 +71,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     // preload images (IMPORTANT FOR SMOOTH SWIPE)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       for (final s in students) {
-        final url = s['photo'];
+        final url = s['image_url'] ?? s['photo'];
         if (url != null && url.toString().isNotEmpty) {
           precacheImage(NetworkImage(url), context);
         }
@@ -236,8 +236,10 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 );
               },
             ),
-          if (drag.dx > 20) _overlay("PRESENT", Colors.green),
-          if (drag.dx < -20) _overlay("ABSENT", Colors.red),
+          if (drag.dx > 20)
+            _overlay("PRESENT", const Color.fromARGB(0, 76, 175, 79)),
+          if (drag.dx < -20)
+            _overlay("ABSENT", const Color.fromARGB(0, 244, 67, 54)),
         ],
       ),
     );
@@ -279,15 +281,29 @@ class _AttendanceScreenState extends State<AttendanceScreen>
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(40)),
-                child: CachedNetworkImage(
-                  imageUrl: student['photo'] ?? "",
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (_, __) =>
-                      const Center(child: CircularProgressIndicator()),
-                  errorWidget: (_, __, ___) => const Center(
-                    child: Icon(Icons.person, size: 120, color: Colors.grey),
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    final imageUrl =
+                        student['image_url'] ?? student['photo'] ?? "";
+                    if (imageUrl.toString().isEmpty) {
+                      return const Center(
+                        child:
+                            Icon(Icons.person, size: 120, color: Colors.grey),
+                      );
+                    }
+                    return CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.contain, // Fits entire image appropriately
+                      width: double.infinity,
+                      placeholder: (_, __) => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      errorWidget: (_, __, ___) => const Center(
+                        child:
+                            Icon(Icons.person, size: 120, color: Colors.grey),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
