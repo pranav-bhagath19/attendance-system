@@ -5,7 +5,9 @@ library;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/attendance_provider.dart';
+import '../../providers/class_provider.dart';
 import '../../theme/app_theme.dart';
 import 'analytics_screen.dart';
 
@@ -26,7 +28,15 @@ class AttendanceReportScreen extends StatefulWidget {
 }
 
 class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
+  bool _isLoading = true;
   bool _isSaving = false;
+  String? _errorMessage;
+
+  List<Map<String, dynamic>> _mergedAttendance = [];
+  int _presentCount = 0;
+  int _absentCount = 0;
+  int _lateCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -36,10 +46,88 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
   }
 
   Future<void> _loadReport() async {
-    await context.read<AttendanceProvider>().fetchAttendanceReport(
-          widget.classId,
-          widget.date,
-        );
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // 1. Fetch full student list
+      await context.read<ClassProvider>().fetchClassStudents(widget.classId);
+      final students = context.read<ClassProvider>().classStudents;
+
+      // 2. Parse date and define startOfDay / endOfDay
+      final selectedDate = DateTime.parse(widget.date);
+      final startOfDay =
+          DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+      final endOfDay = DateTime(selectedDate.year, selectedDate.month,
+          selectedDate.day, 23, 59, 59, 999);
+
+      // 3. Query attendance for this class and date
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('attendance')
+          .where('class_id', isEqualTo: widget.classId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
+
+      debugPrint(
+          "DEBUGLOG: Found ${querySnapshot.docs.length} attendance documents.");
+
+      // 4. Extract records array and build Map<student_id, status>
+      final Map<String, dynamic> statusMap = {};
+      int recordsExtracted = 0;
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final records = data['records'] as List<dynamic>? ?? [];
+        recordsExtracted += records.length;
+        for (var record in records) {
+          final sId =
+              record['student_id']?.toString() ?? record['id']?.toString();
+          if (sId != null) {
+            statusMap[sId] = record['status'] ?? 'NOT_MARKED';
+          }
+        }
+      }
+
+      debugPrint("DEBUGLOG: Extracted $recordsExtracted records.");
+      debugPrint("DEBUGLOG: statusMap keys: ${statusMap.keys.toList()}");
+
+      // 5. Merge with full student list
+      _mergedAttendance = students.map((s) {
+        final stId = s['id']?.toString() ?? '';
+        return {
+          'student_id': stId,
+          'student_name': s['name'] ?? 'Unknown',
+          'roll_no': s['roll_no']?.toString() ?? 'N/A',
+          'status': statusMap[stId] ?? 'NOT_MARKED',
+          'notes': '',
+        };
+      }).toList();
+
+      debugPrint(
+          "DEBUGLOG: Merged list has ${_mergedAttendance.length} students.");
+
+      _calculateCounts();
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+      debugPrint("Error loading report: $e");
+    }
+  }
+
+  void _calculateCounts() {
+    _presentCount =
+        _mergedAttendance.where((a) => a['status'] == 'PRESENT').length;
+    _absentCount =
+        _mergedAttendance.where((a) => a['status'] == 'ABSENT').length;
+    _lateCount = _mergedAttendance.where((a) => a['status'] == 'LATE').length;
   }
 
   @override
@@ -63,136 +151,129 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
           ),
         ],
       ),
-      body: Consumer<AttendanceProvider>(
-        builder: (context, attendanceProvider, _) {
-          if (attendanceProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: _buildBody(),
+    );
+  }
 
-          final report = attendanceProvider.attendanceReport;
-          if (report == null) {
-            return const Center(child: Text('No report available'));
-          }
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          final attendance = List<Map<String, dynamic>>.from(
-            report['attendance'] ?? [],
-          );
+    if (_errorMessage != null) {
+      return Center(child: Text('Error: $_errorMessage'));
+    }
 
-          final presentCount =
-              attendance.where((a) => a['status'] == 'PRESENT').length;
-          final absentCount =
-              attendance.where((a) => a['status'] == 'ABSENT').length;
-          final lateCount =
-              attendance.where((a) => a['status'] == 'LATE').length;
+    if (_mergedAttendance.isEmpty) {
+      return const Center(child: Text('No students found for this class'));
+    }
 
-          return Column(
+    return Column(
+      children: [
+        // Header Summary
+        Container(
+          padding: const EdgeInsets.all(AppTheme.lg),
+          color: AppTheme.primaryColor.withValues(alpha: 0.05),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Summary
-              Container(
-                padding: const EdgeInsets.all(AppTheme.lg),
-                color: AppTheme.primaryColor.withValues(alpha: 0.05),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.className,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    Text(
-                      DateFormat('EEEE, MMMM d, yyyy')
-                          .format(DateTime.parse(widget.date)),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _SummaryItem(
-                          label: 'Present',
-                          count: presentCount,
-                          color: AppTheme.successGreen,
-                        ),
-                        _SummaryItem(
-                          label: 'Late',
-                          count: lateCount,
-                          color: AppTheme.lateOrange,
-                        ),
-                        _SummaryItem(
-                          label: 'Absent',
-                          count: absentCount,
-                          color: AppTheme.absentRed,
-                        ),
-                        _SummaryItem(
-                          label: 'Total',
-                          count: attendance.length,
-                          color: AppTheme.primaryColor,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              Text(
+                widget.className,
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
+              Text(
+                DateFormat('EEEE, MMMM d, yyyy')
+                    .format(DateTime.parse(widget.date)),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _SummaryItem(
+                    label: 'Present',
+                    count: _presentCount,
+                    color: AppTheme.successGreen,
+                  ),
+                  _SummaryItem(
+                    label: 'Late',
+                    count: _lateCount,
+                    color: AppTheme.lateOrange,
+                  ),
+                  _SummaryItem(
+                    label: 'Absent',
+                    count: _absentCount,
+                    color: AppTheme.absentRed,
+                  ),
+                  _SummaryItem(
+                    label: 'Total',
+                    count: _mergedAttendance.length,
+                    color: AppTheme.primaryColor,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
 
-              // Attendance List
+        // Attendance List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(AppTheme.lg),
+            itemCount: _mergedAttendance.length,
+            itemBuilder: (context, index) {
+              final record = _mergedAttendance[index];
+              return _AttendanceRow(
+                record: record,
+                onStatusChanged: (newStatus) {
+                  setState(() {
+                    _mergedAttendance[index]['status'] = newStatus;
+                    _calculateCounts();
+                  });
+                },
+              );
+            },
+          ),
+        ),
+
+        // Action Buttons
+        Padding(
+          padding: const EdgeInsets.all(AppTheme.lg),
+          child: Row(
+            children: [
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(AppTheme.lg),
-                  itemCount: attendance.length,
-                  itemBuilder: (context, index) {
-                    final record = attendance[index];
-                    return _AttendanceRow(
-                      record: record,
-                      onStatusChanged: (newStatus) {
-                        setState(() {
-                          attendance[index]['status'] = newStatus;
-                        });
-                      },
-                    );
-                  },
+                child: OutlinedButton.icon(
+                  onPressed: _isSaving
+                      ? null
+                      : () {
+                          Navigator.pop(context);
+                        },
+                  icon: const Icon(Icons.close),
+                  label: const Text('Discard'),
                 ),
               ),
-
-              // Action Buttons
-              Padding(
-                padding: const EdgeInsets.all(AppTheme.lg),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _isSaving
-                            ? null
-                            : () {
-                                Navigator.pop(context);
-                              },
-                        icon: const Icon(Icons.close),
-                        label: const Text('Discard'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _isSaving
-                            ? null
-                            : () {
-                                _saveChanges(attendance);
-                              },
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Icon(Icons.check),
-                        label: const Text('Save Changes'),
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isSaving
+                      ? null
+                      : () {
+                          _saveChanges(_mergedAttendance);
+                        },
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : const Icon(Icons.check),
+                  label: const Text('Save Changes'),
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -206,10 +287,10 @@ class _AttendanceReportScreenState extends State<AttendanceReportScreen> {
             'student_id':
                 a['student_id']?.toString() ?? a['id']?.toString() ?? '',
             'status': a['status'],
-            'notes': a['notes'],
+            'notes': a['notes'] ?? '',
           };
         })
-        .where((a) => a['student_id'] != '')
+        .where((a) => a['student_id'] != '' && a['status'] != 'NOT_MARKED')
         .toList();
 
     await context.read<AttendanceProvider>().submitAttendance(
