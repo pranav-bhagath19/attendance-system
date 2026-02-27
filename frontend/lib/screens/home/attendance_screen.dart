@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/class_provider.dart';
 import '../../providers/attendance_provider.dart';
@@ -150,6 +151,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   void _onPanEnd(DragEndDetails d) {
     if (_isSwiping) return;
 
+    // Detect swipe up for mentor details (dy is negative for up)
+    if (drag.dy < -_swipeThreshold && drag.dx.abs() < _swipeThreshold * 1.5) {
+      _showMentorDetails();
+      setState(() => drag = Offset.zero);
+      return;
+    }
+
     if (drag.dx > _swipeThreshold) {
       _completeSwipe("PRESENT", drag);
     } else if (drag.dx < -_swipeThreshold) {
@@ -157,6 +165,188 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     } else {
       setState(() => drag = Offset.zero);
     }
+  }
+
+  void _showMentorDetails() {
+    if (students.isEmpty || currentIndex >= students.length) return;
+
+    final student = students[currentIndex];
+    final mentorName = student['mentor_name']?.toString() ?? "";
+    final mentorPhone = student['mentor_phone']?.toString() ?? "";
+    final studentName = student['name']?.toString() ?? "Student";
+
+    Vibration.hasVibrator().then((hasVibe) {
+      if (hasVibe ?? false) Vibration.vibrate(duration: 30);
+    });
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 5,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const Icon(Icons.support_agent,
+                  size: 48, color: Colors.blueAccent),
+              const SizedBox(height: 16),
+              const Text(
+                "Mentor Details",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                studentName,
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 24),
+              if (mentorName.isEmpty && mentorPhone.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red.shade700),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          "Mentor info not available",
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.person, color: Colors.blue.shade700),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Mentor Name",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  mentorName.isNotEmpty ? mentorName : "N/A",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Divider(color: Colors.blue.shade200),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Icon(Icons.phone, color: Colors.blue.shade700),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Phone Number",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  mentorPhone.isNotEmpty ? mentorPhone : "N/A",
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (mentorPhone.isNotEmpty)
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                final uri = Uri.parse("tel:$mentorPhone");
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri);
+                                } else {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content:
+                                              Text("Could not launch dialer")),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.call,
+                                  size: 16, color: Colors.white),
+                              label: const Text("Call",
+                                  style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green.shade600,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   // ========================= SUBMIT =========================
